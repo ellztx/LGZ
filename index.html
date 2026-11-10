@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kalkulator</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg1:#e8eefc; --bg2:#f7e9f5;
+  --card:rgba(255,255,255,.62); --border:rgba(255,255,255,.8);
+  --text:#161a2b; --muted:#6b7190;
+  --key:rgba(255,255,255,.85); --key-hover:#fff;
+  --op:#e3e9ff; --op-text:#3b4fd8;
+  --fn:#eceef6;
+  --accent:#4f6bff; --accent2:#8a5cff; --accent-text:#fff;
+  --shadow:0 20px 60px rgba(60,70,140,.22);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg1:#0e1020; --bg2:#1d1233;
+    --card:rgba(30,33,58,.6); --border:rgba(255,255,255,.08);
+    --text:#f1f3ff; --muted:#9aa0c4;
+    --key:rgba(255,255,255,.07); --key-hover:rgba(255,255,255,.14);
+    --op:rgba(110,130,255,.18); --op-text:#a9b7ff;
+    --fn:rgba(255,255,255,.12);
+    --shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg1:#0e1020; --bg2:#1d1233;
+  --card:rgba(30,33,58,.6); --border:rgba(255,255,255,.08);
+  --text:#f1f3ff; --muted:#9aa0c4;
+  --key:rgba(255,255,255,.07); --key-hover:rgba(255,255,255,.14);
+  --op:rgba(110,130,255,.18); --op-text:#a9b7ff;
+  --fn:rgba(255,255,255,.12);
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color:var(--text);
+  background:radial-gradient(circle at 15% 10%,var(--bg1),transparent 60%),radial-gradient(circle at 85% 90%,var(--bg2),transparent 60%),var(--bg1);
+  background-color:var(--bg1);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.calc{
+  width:100%;max-width:380px;padding:20px;border-radius:32px;
+  background:var(--card);border:1px solid var(--border);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:var(--shadow);
+}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.title{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.icon-btn{
+  border:0;background:var(--fn);color:var(--text);width:38px;height:38px;border-radius:12px;
+  cursor:pointer;font-size:17px;transition:transform .15s;
+}
+.icon-btn:hover{transform:scale(1.08)}
+.screen{padding:10px 6px 16px;text-align:right;min-height:112px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.expr{font-size:15px;color:var(--muted);min-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.value{font-size:56px;font-weight:600;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.02em;transition:font-size .1s}
+.value.err{color:#ff5d6c}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.k{
+  height:68px;border:0;border-radius:22px;font-size:24px;font-weight:500;cursor:pointer;
+  background:var(--key);color:var(--text);font-family:inherit;
+  box-shadow:0 2px 8px rgba(40,50,110,.08);transition:transform .08s,background .15s,filter .15s;
+}
+.k:hover{background:var(--key-hover)}
+.k:active,.k.press{transform:scale(.93)}
+.k.fn{background:var(--fn);color:var(--text);font-size:21px}
+.k.op{background:var(--op);color:var(--op-text);font-size:28px}
+.k.eq{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-text);font-size:30px;box-shadow:0 8px 22px rgba(79,107,255,.4)}
+.k.eq:hover{filter:brightness(1.08)}
+.k.zero{grid-column:span 2}
+.k:focus-visible,.icon-btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hist{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.hist-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+.hist-head button{border:0;background:none;color:var(--accent);cursor:pointer;font-size:12px;font-family:inherit}
+.hist ul{list-style:none;margin:0;padding:0;max-height:110px;overflow-y:auto}
+.hist li{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:10px;font-size:13px;color:var(--muted);cursor:pointer}
+.hist li:hover{background:var(--fn)}
+.hist li b{color:var(--text);font-weight:600}
+.hist .empty{cursor:default;justify-content:center}
+.hist .empty:hover{background:none}
+@media (max-width:380px){.k{height:60px;font-size:21px}.value{font-size:46px}}
+</style>
+</head>
+<body>
+<main class="calc" aria-label="Kalkulator">
+  <div class="top">
+    <span class="title">KALKULATOR</span>
+    <button class="icon-btn" id="theme" aria-label="Ganti tema" title="Ganti tema">◐</button>
+  </div>
+  <section class="screen" aria-live="polite">
+    <div class="expr" id="expr"></div>
+    <div class="value" id="value">0</div>
+  </section>
+  <div class="keys" id="keys">
+    <button class="k fn" data-a="clear" id="clr" style="grid-column:span 2">AC</button>
+    <button class="k fn" data-a="pct">%</button>
+    <button class="k op" data-a="op" data-v="÷">÷</button>
+    <button class="k" data-a="d" data-v="7">7</button>
+    <button class="k" data-a="d" data-v="8">8</button>
+    <button class="k" data-a="d" data-v="9">9</button>
+    <button class="k op" data-a="op" data-v="×">×</button>
+    <button class="k" data-a="d" data-v="4">4</button>
+    <button class="k" data-a="d" data-v="5">5</button>
+    <button class="k" data-a="d" data-v="6">6</button>
+    <button class="k op" data-a="op" data-v="−">−</button>
+    <button class="k" data-a="d" data-v="1">1</button>
+    <button class="k" data-a="d" data-v="2">2</button>
+    <button class="k" data-a="d" data-v="3">3</button>
+    <button class="k op" data-a="op" data-v="+">+</button>
+    <button class="k zero" data-a="d" data-v="0">0</button>
+    <button class="k" data-a="dot">,</button>
+    <button class="k eq" data-a="eq">=</button>
+    <button class="k fn" data-a="back" style="grid-column:span 4;height:48px;font-size:18px">⌫ Hapus satu angka</button>
+  </div>
+  <div class="hist">
+    <div class="hist-head"><span>Riwayat</span><button id="clearHist">Bersihkan</button></div>
+    <ul id="hist"><li class="empty">Belum ada perhitungan</li></ul>
+  </div>
+</main>
+<script>
+(function(){
+  var cur="0", prev=null, op=null, overwrite=false, err=false, history=[];
+  var elV=document.getElementById("value"), elE=document.getElementById("expr"),
+      elH=document.getElementById("hist"), elC=document.getElementById("clr");
+
+  function fmt(s){
+    if(err) return s;
+    if(/e/i.test(s)) return s.replace(".",",");
+    var neg=s.charAt(0)==="-"; if(neg) s=s.slice(1);
+    var p=s.split("."), i=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,".");
+    return (neg?"-":"")+i+(p.length>1?","+p[1]:"");
+  }
+  function clean(n){
+    if(!isFinite(n)) throw new Error("Hasil tidak valid");
+    var r=parseFloat(n.toPrecision(12));
+    return Object.is(r,-0)?"0":String(r);
+  }
+  function calc(a,b,o){
+    a=parseFloat(a); b=parseFloat(b);
+    if(o==="+") return clean(a+b);
+    if(o==="−") return clean(a-b);
+    if(o==="×") return clean(a*b);
+    if(o==="÷"){ if(b===0) throw new Error("Tidak bisa dibagi 0"); return clean(a/b); }
+    return String(b);
+  }
+  function render(){
+    var t=fmt(cur);
+    elV.textContent=t;
+    elV.classList.toggle("err",err);
+    var n=t.length, size=56;
+    if(n>9) size=46; if(n>12) size=36; if(n>15) size=28; if(n>20) size=22;
+    elV.style.fontSize=size+"px";
+    elE.textContent=op&&prev!==null?fmt(prev)+" "+op:"";
+    elC.textContent=(cur==="0"&&!op&&!err)?"AC":"C";
+  }
+  function renderHist(){
+    if(!history.length){ elH.innerHTML='<li class="empty">Belum ada perhitungan</li>'; return; }
+    elH.innerHTML="";
+    history.slice().reverse().forEach(function(h){
+      var li=document.createElement("li");
+      var a=document.createElement("span"); a.textContent=h.e;
+      var b=document.createElement("b"); b.textContent="= "+fmt(h.r);
+      li.appendChild(a); li.appendChild(b);
+      li.addEventListener("click",function(){ err=false; cur=h.r; op=null; prev=null; overwrite=true; render(); });
+      elH.appendChild(li);
+    });
+  }
+  function fail(m){ err=true; cur=m; op=null; prev=null; overwrite=true; render(); }
+  function reset(){ cur="0"; prev=null; op=null; overwrite=false; err=false; }
+
+  function digit(d){
+    if(err) reset();
+    if(overwrite){ cur=d; overwrite=false; return; }
+    if(cur.replace(/[-.]/g,"").length>=15) return;
+    cur=(cur==="0")?d:(cur==="-0"?"-"+d:cur+d);
+  }
+  function dot(){
+    if(err) reset();
+    if(overwrite){ cur="0."; overwrite=false; return; }
+    if(cur.indexOf(".")<0) cur+=".";
+  }
+  function operator(o){
+    if(err) return;
+    try{
+      if(op&&!overwrite){ cur=calc(prev,cur,op); }
+      prev=cur; op=o; overwrite=true;
+    }catch(e){ fail(e.message); }
+  }
+  function equals(){
+    if(err||!op) return;
+    try{
+      var a=prev,b=cur,o=op,r=calc(a,b,o);
+      history.push({e:fmt(a)+" "+o+" "+fmt(b),r:r});
+      if(history.length>20) history.shift();
+      cur=r; op=null; prev=null; overwrite=true; renderHist();
+    }catch(e){ fail(e.message); }
+  }
+  function percent(){
+    if(err) return;
+    try{
+      var v=parseFloat(cur);
+      cur=(op&&prev!==null)?clean(parseFloat(prev)*v/100):clean(v/100);
+      overwrite=true;
+    }catch(e){ fail(e.message); }
+  }
+  function back(){
+    if(err){ reset(); return; }
+    if(overwrite) return;
+    cur=cur.slice(0,-1);
+    if(cur===""||cur==="-") cur="0";
+  }
+  function act(a,v){
+    if(a==="d") digit(v);
+    else if(a==="dot") dot();
+    else if(a==="op") operator(v);
+    else if(a==="eq") equals();
+    else if(a==="pct") percent();
+    else if(a==="back") back();
+    else if(a==="clear") reset();
+    render();
+  }
+
+  document.getElementById("keys").addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    act(b.dataset.a,b.dataset.v);
+  });
+
+  var map={"+":"+","-":"−","*":"×","/":"÷"};
+  document.addEventListener("keydown",function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    var k=e.key, sel=null;
+    if(/^[0-9]$/.test(k)){ act("d",k); sel='[data-a="d"][data-v="'+k+'"]'; }
+    else if(k==="."||k===","){ act("dot"); sel='[data-a="dot"]'; }
+    else if(map[k]){ act("op",map[k]); sel='[data-v="'+map[k]+'"]'; }
+    else if(k==="Enter"||k==="="){ e.preventDefault(); act("eq"); sel='[data-a="eq"]'; }
+    else if(k==="Backspace"){ act("back"); sel='[data-a="back"]'; }
+    else if(k==="Escape"){ act("clear"); sel='[data-a="clear"]'; }
+    else if(k==="%"){ act("pct"); sel='[data-a="pct"]'; }
+    else return;
+    var btn=document.querySelector(sel);
+    if(btn){ btn.classList.add("press"); setTimeout(function(){btn.classList.remove("press");},110); }
+  });
+
+  document.getElementById("clearHist").addEventListener("click",function(){ history=[]; renderHist(); });
+  document.getElementById("theme").addEventListener("click",function(){
+    var r=document.documentElement, dark=r.getAttribute("data-theme")==="dark"||
+      (!r.getAttribute("data-theme")&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+    r.setAttribute("data-theme",dark?"light":"dark");
+  });
+  render();
+})();
+</script>
+</body>
+</html>
